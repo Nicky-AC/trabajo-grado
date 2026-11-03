@@ -1,6 +1,6 @@
 # Licencia del texto
 
-El texto de la tesis (carpeta `tesis/`), las diapositivas y guiones (carpeta
+El texto de la tesis (carpeta `tesis/`), las diapositivas (carpeta
 `presentacion/`) y las imágenes de `imagenes/` son © 2026 Sharon Acosta y se
 publican bajo la licencia **Creative Commons Atribución 4.0 Internacional
 (CC BY 4.0)**.
