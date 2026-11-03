@@ -26,7 +26,7 @@ Dirichlet-Neumann**. La tesis explica la teoría y los resultados.
 | `programas/` | Los programas de cálculo. Ver la tabla de abajo. |
 | `programas/salida_demo/` | Resultados ya calculados (mallas y campos de la simulación con N = 40) y las tres figuras que salen de ellos. |
 | `imagenes/` | Las imágenes que usa la tesis. |
-| `presentacion/` | Las diapositivas de la sustentación (`main.tex` y `frames.tex`), el guion y las hojas de repaso. |
+| `presentacion/` | Las diapositivas de la sustentación (`main.tex` y `frames.tex`). |
 
 ### Los programas
 
