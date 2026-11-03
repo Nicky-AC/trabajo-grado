@@ -1,0 +1,191 @@
+// ==========================================================
+//  Interaccion fluido-estructura estacionaria:
+//  Stokes + elasticidad lineal.
+//  Esquema particionado Dirichlet-Neumann con relajacion constante y
+//  extension ALE armonica (Capitulos 2 y 3 del trabajo de grado).
+//
+//  Uso:  FreeFem++ FSI_Particionado.edp -N 40 -out res -ref 0 -export 0
+//    -N       subdivisiones por lado de la cavidad (malla estructurada)
+//    -out     prefijo de los archivos de salida
+//    -ref     1 = guardar la solucion como referencia (ref_*.txt)
+//    -cmp     N de la referencia contra la que se mide el error (0 = no)
+//    -export  1 = exportar mallas y campos para las figuras
+//    -omega   factor de relajacion (por defecto 0.5)
+// ==========================================================
+include "getARGV.idp"
+verbosity = 0;
+
+int Nd = getARGV("-N", 20);
+string out  = getARGV("-out", "res");
+int saveref = getARGV("-ref", 0);
+int Nref    = getARGV("-cmp", 0);
+int doexp   = getARGV("-export", 0);
+
+// ---------------- Parametros (Tabla 3.1) ----------------
+real L = 10., H = 2.;          // lado de la cavidad, espesor de la viga
+real E = 21.5, nu = 0.29;      // solido
+real gravity = -0.05;          // fuerza masica (direccion -y)
+real muf = 1.0;                // viscosidad del fluido
+real U0 = 1.0;                 // velocidad tangencial en la pared izquierda
+real coefalpha = 0.2;          // intensidad de acoplamiento
+real omega = getARGV("-omega", 0.5);
+real tol = 1e-6;               // tolerancia del acoplamiento
+int maxit = 200;
+
+real mus = E/(2*(1+nu));
+real lambda = E*nu/((1+nu)*(1-2*nu));
+
+// ---------------- Mallas de referencia ----------------
+// Etiquetas de square: 1 abajo, 2 derecha, 3 arriba, 4 izquierda.
+// Solido: [0,L]x[0,H]; su cara inferior (etiqueta 1) es Gamma_int.
+// Fluido: [0,L]x[-L,0]; su cara superior (etiqueta 3) es Gamma_int.
+int Ns = max(2, Nd/5);
+mesh th  = square(Nd, Ns, [L*x, H*y]);
+mesh sh0 = square(Nd, Nd, [L*x, -L + L*y]);
+int bottombeam = 1;                       // Gamma_int en el solido
+int interfaz = 3, derecha = 2, fondo = 1, izquierda = 4;   // fluido
+
+// ---------------- Macros ----------------
+real sqrt2 = sqrt(2.);
+macro epsilon(u1,u2) [dx(u1), dy(u2), (dy(u1)+dx(u2))/sqrt2] //
+macro div(u1,u2) (dx(u1)+dy(u2)) //
+
+// ---------------- Espacios ----------------
+fespace Vh(th, [P1, P1]);                 // solido
+Vh [d1, d2], [dt1, dt2], [d1old, d2old], [w, s];
+[d1, d2] = [0, 0];
+
+fespace Wh0(sh0, P2);                      // extension ALE (malla de referencia)
+Wh0 mx, my, wx, wy;
+real area0 = int2d(sh0)(1.);
+real alphastiffness = 1.0/(area0 + 1e-10);
+
+fespace Mh0(sh0, P1);                      // tensiones llevadas a la referencia
+Mh0 s11r, s22r, s12r;
+
+problem MeshMovement([mx, my], [wx, wy]) =
+    int2d(sh0)( alphastiffness*(dx(mx)*dx(wx) + dy(mx)*dy(wx))
+              + alphastiffness*(dx(my)*dx(wy) + dy(my)*dy(wy)) )
+    + on(interfaz, mx = d1, my = d2)
+    + on(izquierda, derecha, fondo, mx = 0, my = 0);
+
+mesh sh = sh0;
+fespace Xh(sh, [P2, P2, P1]);              // Taylor-Hood
+Xh [u1, u2, p], [v1, v2, q];
+fespace Mh(sh, P1);
+Mh sigma11, sigma22, sigma12;
+
+real res = 1., minarea = 0., minarea0 = 0.;
+int it;
+for (it = 1; it <= maxit; ++it) {
+    // 1. Malla del fluido en la configuracion actual (extension ALE de d)
+    MeshMovement;
+    sh = movemesh(sh0, [x + mx, y + my]);
+
+    // 2. Stokes (Dirichlet en la interfaz: u = 0, caso estacionario)
+    solve Stokes([u1, u2, p], [v1, v2, q], solver=UMFPACK) =
+        int2d(sh)( 2*muf*(epsilon(u1,u2)'*epsilon(v1,v2))
+                   - p*div(v1,v2) - q*div(u1,u2) - 1e-10*p*q )
+        + on(izquierda, u1 = 0, u2 = U0)
+        + on(fondo, derecha, interfaz, u1 = 0, u2 = 0);
+    real pm = int2d(sh)(p)/int2d(sh)(1.);
+    {   Mh pp = p - pm;                     // presion de media cero
+        // 3. Proyeccion L2 de las componentes de sigma_f sobre P1
+        varf mass(a, b) = int2d(sh)(a*b);
+        varf r11(a, b) = int2d(sh)((-pp + 2*muf*dx(u1))*b);
+        varf r22(a, b) = int2d(sh)((-pp + 2*muf*dy(u2))*b);
+        varf r12(a, b) = int2d(sh)(muf*(dy(u1) + dx(u2))*b);
+        matrix M = mass(Mh, Mh, solver=UMFPACK);
+        real[int] b11 = r11(0, Mh), b22 = r22(0, Mh), b12 = r12(0, Mh);
+        sigma11[] = M^-1*b11; sigma22[] = M^-1*b22; sigma12[] = M^-1*b12;
+    }
+    // Las tensiones se llevan a la malla de referencia (misma numeracion)
+    s11r[] = sigma11[]; s22r[] = sigma22[]; s12r[] = sigma12[];
+
+    // 4. Elasticidad con la traccion del fluido (Neumann en Gamma_int)
+    //    N = normal exterior del solido = n_s; carga = alpha * sigma_f . n_s
+    d1old[] = d1[];
+    solve Elasticity([dt1, dt2], [w, s], solver=UMFPACK) =
+        int2d(th)( lambda*div(w,s)*div(dt1,dt2)
+                   + 2.*mus*(epsilon(w,s)'*epsilon(dt1,dt2)) )
+        + int2d(th)( -gravity*s )
+        + int1d(th, bottombeam)( -coefalpha*( (s11r*N.x + s12r*N.y)*w
+                                             + (s12r*N.x + s22r*N.y)*s ) )
+        + on(2, 4, dt1 = 0, dt2 = 0);       // extremos empotrados
+
+    // 5. Relajacion
+    d1[] = omega*dt1[] + (1 - omega)*d1old[];
+
+    // 6. Criterio de parada sobre la interfaz
+    real nd = sqrt(int1d(th, bottombeam)(d1^2 + d2^2));
+    real nr = sqrt(int1d(th, bottombeam)((d1 - d1old)^2 + (d2 - d2old)^2));
+    res = nr/max(nd, 1e-30);
+    cout << "  it " << it << "  residuo " << res << endl;
+    if (res < tol) break;
+}
+
+// Malla final y calidad (J_K > 0 <=> area con signo positivo)
+MeshMovement;
+sh = movemesh(sh0, [x + mx, y + my]);
+fespace P0h(sh, P0); P0h ar = area;
+fespace P0h0(sh0, P0); P0h0 ar0 = area;
+real[int] ratio = ar[]; ratio ./= ar0[];
+minarea = ratio.min;
+
+// Desplazamiento maximo de la viga
+fespace Sh1(th, P1); Sh1 dyy = d2;
+real maxdefl = -dyy[].min;
+real xmaxdefl = 0;
+{ for (int i = 0; i < th.nv; ++i) if (-dyy[][i] >= maxdefl - 1e-14) xmaxdefl = th(i).x; }
+
+cout << "RESULT N=" << Nd << " iter=" << it << " res=" << res
+     << " maxdefl=" << maxdefl << " xmax=" << xmaxdefl
+     << " minAreaRatio=" << minarea
+     << " ntri_f=" << sh.nt << endl;
+
+// ---------------- Referencia y error ----------------
+fespace Xh0(sh0, [P2, P2, P1]);
+Xh0 [r1, r2, rp];
+r1[] = u1[];                                  // pull-back (misma numeracion)
+if (saveref) {
+    ofstream f("ref_u.txt"); f.precision(17); f << r1[];
+    ofstream g("ref_d.txt"); g.precision(17); g << d1[];
+}
+if (Nref > 0) {
+    mesh shR = square(Nref, Nref, [L*x, -L + L*y]);
+    fespace XR(shR, [P2, P2, P1]);
+    XR [ur1, ur2, urp];
+    { ifstream f("ref_u.txt"); f >> ur1[]; }
+    // I_N u_ref: interpolacion nodal de la referencia sobre la malla N
+    Xh0 [i1, i2, ip] = [ur1, ur2, urp];
+    Xh [e1, e2, ep], [I1, I2, Ip];
+    I1[] = i1[];
+    e1[] = u1[] - I1[];
+    real err = sqrt(int2d(sh)(e1^2 + e2^2));
+    real nrm = sqrt(int2d(sh)(I1^2 + I2^2));
+
+    mesh thR = square(Nref, max(2, Nref/5), [L*x, H*y]);
+    fespace VR(thR, [P1, P1]); VR [dr1, dr2];
+    { ifstream g("ref_d.txt"); g >> dr1[]; }
+    Vh [id1, id2] = [dr1, dr2];
+    real errd = sqrt(int2d(th)((d1 - id1)^2 + (d2 - id2)^2));
+    real nrmd = sqrt(int2d(th)(id1^2 + id2^2));
+    cout << "ERROR N=" << Nd << " Eu=" << err/nrm << " Ed=" << errd/nrmd << endl;
+}
+
+// ---------------- Exportar para figuras ----------------
+if (doexp) {
+    savemesh(sh, out + "_fluido.msh");
+    savemesh(sh0, out + "_fluido_ref.msh");
+    mesh thd = movemesh(th, [x + d1, y + d2]);
+    savemesh(th, out + "_solido.msh");
+    savemesh(thd, out + "_solido_def.msh");
+    fespace Ph(sh, P1); Ph pu1 = u1, pu2 = u2, ppp = p;
+    real pm = int2d(sh)(p)/int2d(sh)(1.);
+    { ofstream f(out + "_fluido_campos.txt"); f.precision(12);
+      for (int i = 0; i < sh.nv; ++i)
+          f << pu1[][i] << " " << pu2[][i] << " " << (ppp[][i] - pm) << endl; }
+    { ofstream f(out + "_solido_campos.txt"); f.precision(12);
+      for (int i = 0; i < th.nv; ++i)
+          f << d1(th(i).x, th(i).y) << " " << d2(th(i).x, th(i).y) << endl; }
+}

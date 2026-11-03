@@ -1,0 +1,23 @@
+# Archivos temporales de LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+*.nav
+*.snm
+*.vrb
+# Copias de respaldo y sistema
+*.respaldo_*
+Thumbs.db
+desktop.ini
+# Datos personales y trámites (no van al repositorio)
+firma*
+Carta*
+Solicitud*
+Correcciones*

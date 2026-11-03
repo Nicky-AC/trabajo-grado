@@ -1,0 +1,88 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+
+%Textos en español
+\usepackage[spanish]{babel}
+
+% Document metadata
+% La plantilla original usa la fuente Source Sans Pro, que no está instalada
+% en este computador; se usa Lato en su lugar. Para compilar en Overleaf con
+% la fuente original, reemplace estas tres líneas por:
+%   \usetheme[sectionstyle=style1]{trigon}
+\usetheme[sectionstyle=style1,usesourcefonts=false]{trigon}
+\usepackage[T1]{fontenc}
+\usepackage[default]{lato}
+
+\setbeamerfont{title}{size=\large}
+
+\title{Descripción y simulación de un modelo matemático para problemas acoplados fluido-estructura usando el método de elementos finitos}
+\author{Sharon Nicole Acosta Caraballo}
+\institute[Unicartagena]{Universidad de Cartagena \\ Programa de Matemáticas \\[2pt] \footnotesize Director: Humberto David Pérez González, PhD}
+\date{\today}
+% Imagen para la página del título (utilice la opción includegraphics para dimensionarla/ubicarla correctamente)
+\IfFileExists{Gemini_Generated_Image_ar0dyjar0dyjar0d.png}{\titlegraphic{\includegraphics[width=\textwidth]{Gemini_Generated_Image_ar0dyjar0dyjar0d.png}}}{}
+
+% Definir los logotipos a utilizar (comentar si no hay logotipo)
+\biglogo{udc.png} % Se utiliza sólo en la portada
+\smalllogo{escudo.jpg} % Se utiliza en la esquina superior derecha de los marcos normales
+
+\usepackage{xcolor}
+
+\definecolor{myGold}{HTML}{E79D19}
+\definecolor{myBrick}{HTML}{A63C24}
+
+\colorlet{tPrim}{myGold}
+\colorlet{tSec}{myBrick}
+\colorlet{tAccent}{myBrick}
+
+% Títulos de recuadros un poco más oscuros para que se lean bien en proyector
+\setbeamercolor{block title example}{fg=myGold!75!black}
+
+% Colores auxiliares para diagramas y código (derivados de la paleta)
+\colorlet{colorFluido}{myGold!20}
+\colorlet{colorSolido}{gray!25}
+\colorlet{colorCaja}{gray!8}
+
+\usepackage{appendixnumberbeamer} % To use \appendix command
+\pdfstringdefDisableCommands{% Fix hyperref translate warning with \appendix
+\def\translate#1{#1}%
+}
+\usepackage{caption} % For subfigures
+\usepackage{subcaption} % For subfigures
+\usepackage{xspace}
+\usepackage{booktabs} % Better tables
+\usepackage{amsmath, amssymb}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, patterns, calc, shapes.geometric}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{listings}
+
+\graphicspath{{./}{../imagenes/}}
+
+\lstdefinestyle{FreeFEM}{
+    backgroundcolor=\color{colorCaja},
+    commentstyle=\color{gray},
+    keywordstyle=\color{myBrick}\bfseries,
+    basicstyle=\ttfamily\tiny,
+    breaklines=true, showstringspaces=false, frame=single, rulecolor=\color{myBrick},
+    morekeywords={solve,int2d,int1d,on}
+}
+\lstset{style=FreeFEM}
+
+% Notación
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bd}{\mathbf{d}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\bz}{\mathbf{z}}
+\newcommand{\bn}{\mathbf{n}}
+\newcommand{\Gint}{\Gamma_{\text{int}}}
+
+%==============================================================================
+%                               COMENZAR DOCUMENTO
+%==============================================================================
+\begin{document}
+
+\include{frames}
+
+\end{document}

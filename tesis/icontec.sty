@@ -1,0 +1,82 @@
+% =========================================================
+%  PAQUETE ICONTEC (icontec.sty) - Versión 2025.1
+%  Incluye configuración de Bibliografía (NTC 5613)
+% =========================================================
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{icontec}[2025/01/01 Estilo ICONTEC NTC 1486 + Bibliografía]
+
+% --- 1. IDIOMA Y CODIFICACIÓN ---
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+\RequirePackage[spanish, es-tabla, es-nodecimaldot]{babel}
+\RequirePackage{etoolbox}
+\RequirePackage{textcase}
+
+% --- 2. FUENTES (ARIAL / HELVETICA) ---
+\RequirePackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+% --- 3. MÁRGENES (NTC 1486) ---
+\RequirePackage[left=4cm,right=2cm,top=3cm,bottom=3cm, letterpaper]{geometry}
+
+% --- 4. ESPACIADO ---
+\RequirePackage{setspace}
+\doublespacing 
+\RequirePackage{parskip}
+\setlength{\parindent}{0pt}
+
+% --- 5. ENCABEZADOS Y PIES ---
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[C]{\thepage}
+}
+
+% --- 6. TÍTULOS (ESTILO NTC 1486) ---
+\RequirePackage{titlesec}
+\titleformat{\chapter}[block]{\normalfont\Large\bfseries\centering}{\thechapter.\hskip 1em}{0pt}{\MakeTextUppercase}
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection\hskip 1em}{0pt}{\MakeTextUppercase}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection\hskip 1em}{0pt}{}
+\titlespacing*{\chapter}{0pt}{0pt}{1.5cm}
+\titlespacing*{\section}{0pt}{1cm}{0.5cm}
+
+% --- 7. RENOMBRAMIENTO DE ÍNDICES ---
+\addto{\captionsspanish}{
+    \renewcommand*{\contentsname}{CONTENIDO}
+    \renewcommand*{\listfigurename}{LISTA DE FIGURAS}
+    \renewcommand*{\listtablename}{LISTA DE TABLAS}
+    \renewcommand*{\bibname}{BIBLIOGRAFÍA}
+}
+\patchcmd{\tableofcontents}{\contentsname}{\MakeTextUppercase{\contentsname}}{}{}
+\addtocontents{toc}{~\hfill\textbf{pág.}\par}
+\addtocontents{lof}{~\hfill\textbf{pág.}\par}
+\addtocontents{lot}{~\hfill\textbf{pág.}\par}
+
+% --- 8. LEYENDAS (CAPTIONS) ---
+\RequirePackage{caption}
+\captionsetup{justification=justified, singlelinecheck=false, labelsep=period, labelfont=bf}
+
+% --- 9. BIBLIOGRAFÍA (NTC 5613) ---
+% Cargamos biblatex con el motor biber
+\RequirePackage[backend=biber, style=numeric, sorting=none, isbn=false]{biblatex}
+
+% Formatear autores en MAYÚSCULAS SOSTENIDAS
+\DeclareNameAlias{default}{family-given}
+\renewcommand{\mkbibnamefamily}[1]{\MakeTextUppercase{#1}}
+\renewcommand{\mkbibnamegiven}[1]{\MakeTextUppercase{#1}}
+
+% Separador de autores con punto y coma (;)
+\renewcommand*{\multinamedelim}{\addsemicolon\space}
+\renewcommand*{\finalnamedelim}{\addsemicolon\space}
+
+% Ajustar sangría de la bibliografía
+\setlength{\bibhang}{0pt}
+\setlength{\biblabelsep}{1em}
+
+\endinput
