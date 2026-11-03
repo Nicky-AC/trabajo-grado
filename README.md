@@ -169,6 +169,12 @@ presentación.
 
 ## Autoría y licencia
 
-Todavía no se ha elegido una licencia. Mientras tanto, el código y el texto son de la autora y
-cualquier reutilización requiere su permiso. `Poisson.edp` es un ejemplo de la documentación de
-FreeFem++ y conserva su encabezado original.
+Autora: Sharon Acosta.
+
+- **Código** (`programas/`): licencia MIT (archivo `LICENSE`). Puedes usarlo, copiarlo y
+  modificarlo citando a la autora.
+- **Texto de la tesis, diapositivas e imágenes**: Creative Commons Atribución 4.0 (CC BY 4.0), ver
+  `LICENSE-TEXTO.md`. Puedes compartirlo y adaptarlo citando a la autora. El escudo y el logo de la
+  Universidad de Cartagena no quedan cubiertos.
+- `Poisson.edp` es un ejemplo de la documentación de FreeFem++ (de Antoine Le Hyaric) y conserva su
+  encabezado original; no es parte de la licencia MIT de este repositorio.
